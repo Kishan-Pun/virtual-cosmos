@@ -37,7 +37,6 @@ export const createServer = () => {
     socket.on("register", async ({ userId, username, avatar }) => {
       currentUserId = userId;
 
-      // 🔥 get existing user (IMPORTANT)
       const existingUser = await User.findOne({ userId });
 
       const updatedUser = await User.findOneAndUpdate(
@@ -47,16 +46,15 @@ export const createServer = () => {
           socketId: socket.id,
           username,
           avatar,
-          x: existingUser?.x ?? Math.random() * 800, // ✅ FIX
-          y: existingUser?.y ?? Math.random() * 600, // ✅ FIX
+          x: existingUser?.x ?? Math.random() * 800,
+          y: existingUser?.y ?? Math.random() * 600,
           lastSeen: new Date(),
         },
         { upsert: true, new: true },
       );
 
-      // 🔥 broadcast new user
       socket.broadcast.emit("user-joined", {
-        id: userId,
+        id: userId, // ✅ FIXED
         x: updatedUser?.x,
         y: updatedUser?.y,
         username: updatedUser?.username,
@@ -68,13 +66,11 @@ export const createServer = () => {
 
     // ✅ INIT USERS (FIXED)
     socket.on("ready", async () => {
-      const users = await User.find({
-        lastSeen: { $gte: new Date(Date.now() - 10000) },
-      });
+      const users = await getActiveUsers();
 
       const formatted = Object.fromEntries(
         users.map((u) => [
-          u.userId,
+          u.userId, // ✅ FIXED (not socketId)
           {
             x: u.x || 300,
             y: u.y || 300,
@@ -132,7 +128,7 @@ export const createServer = () => {
       );
 
       io.emit("user-moved", {
-        id: currentUserId,
+        id: currentUserId, // ✅ FIXED
         ...pos,
       });
     });
@@ -144,9 +140,9 @@ export const createServer = () => {
           { userId: currentUserId },
           { lastSeen: new Date() },
         );
-      }
 
-      socket.broadcast.emit("user-left", currentUserId);
+        socket.broadcast.emit("user-left", currentUserId); // ✅ FIXED
+      }
 
       await emitUserCount();
     });

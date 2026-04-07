@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import * as PIXI from "pixi.js";
 import { socket } from "../hooks/useSocket";
 import { createAvatar } from "./Avatar";
-import { usePlayers } from "../hooks/usePlayers";
 import { useMovement } from "../hooks/useMovement";
 
 export default function Canvas({ setActiveChat }: any) {
@@ -31,22 +30,29 @@ export default function Canvas({ setActiveChat }: any) {
 
       const players = playersRef.current;
 
-      // 🔥 STEP 1: register first
+      // ✅ stable userId
+      let userId = localStorage.getItem("userId");
+      if (!userId) {
+        userId = crypto.randomUUID();
+        localStorage.setItem("userId", userId);
+      }
+
+      // ✅ REGISTER
       socket.emit("register", {
-        userId: localStorage.getItem("userId"),
+        userId,
         username: "Kishan",
         avatar: "default",
       });
 
-      // 🔥 STEP 2: wait for init
+      // ✅ READY
       socket.emit("ready");
 
+      // 🔥 INIT
       socket.on("init", (allPlayers) => {
         Object.entries(allPlayers).forEach(([id, data]: any) => {
-          const player = createAvatar(
-            id,
-            id === localStorage.getItem("userId"),
-          );
+          if (players[id]) return;
+
+          const player = createAvatar(id, id === userId);
 
           player.x = data.x;
           player.y = data.y;
@@ -54,14 +60,16 @@ export default function Canvas({ setActiveChat }: any) {
           app.stage.addChild(player);
           players[id] = player;
 
-          if (id === localStorage.getItem("userId")) {
+          if (id === userId) {
             setMe(player);
           }
         });
       });
 
-      // 🔥 new user joins
+      // 🔥 USER JOIN
       socket.on("user-joined", (user) => {
+        if (players[user.id]) return;
+
         const player = createAvatar(user.id, false);
 
         player.x = user.x;
@@ -71,7 +79,7 @@ export default function Canvas({ setActiveChat }: any) {
         players[user.id] = player;
       });
 
-      // 🔥 movement sync
+      // 🔥 MOVE
       socket.on("user-moved", ({ id, x, y }) => {
         const player = players[id];
         if (player) {
@@ -80,7 +88,7 @@ export default function Canvas({ setActiveChat }: any) {
         }
       });
 
-      // 🔥 remove player
+      // 🔥 REMOVE
       socket.on("user-left", (id) => {
         const player = players[id];
         if (player) {

@@ -10,12 +10,15 @@ export const useMovement = (
   const keysRef = useRef<Record<string, boolean>>({});
   const nearbyRef = useRef<Set<string>>(new Set());
 
+  // ✅ throttle ref (IMPORTANT)
+  const lastSentRef = useRef(0);
+
   useEffect(() => {
     if (!me) return;
 
     console.log("✅ movement hook mounted");
 
-    const speed = 20; // 🔥 increased speed
+    const speed = 5;
     const PROXIMITY_RADIUS = 150;
     const ROOM_ID = "proximity-group";
 
@@ -43,9 +46,14 @@ export const useMovement = (
         moved = true;
       }
 
+      // ✅ FIXED MOVEMENT SYNC
       if (moved) {
-        // console.log("📍 POS:", me.x, me.y); // 🔥 debug
-        socket.emit("move", { x: me.x, y: me.y });
+        const now = Date.now();
+
+        if (now - lastSentRef.current > 50) {
+          socket.emit("move", { x: me.x, y: me.y });
+          lastSentRef.current = now;
+        }
       }
 
       // 🔥 PROXIMITY
@@ -53,7 +61,7 @@ export const useMovement = (
       nearby.clear();
 
       Object.entries(players).forEach(([id, other]) => {
-        if (id === socket.id) return;
+        if (id === localStorage.getItem("userId")) return; // ✅ FIXED (not socket.id)
 
         const dx = me.x - other.x;
         const dy = me.y - other.y;
@@ -79,7 +87,7 @@ export const useMovement = (
       }
     }, 16);
 
-    // 🔥 KEY EVENTS (FINAL FIX)
+    // 🔥 KEY EVENTS
     const down = (e: KeyboardEvent) => {
       switch (e.code) {
         case "ArrowUp":
