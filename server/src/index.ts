@@ -7,13 +7,18 @@ import { createServer } from "./server";
 
 dotenv.config();
 
-// connect DB
-connectDB();
+const start = async () => {
+  try {
+    await connectDB(); // ✅ WAIT for DB
 
-// create server
-const server = createServer();
+    const server = createServer();
 
-// start server
-server.listen(5000, () => {
-  console.log("🚀 Server running on http://localhost:5000");
-});
+    server.listen(5000, () => {
+      console.log("🚀 Server running on http://localhost:5000");
+    });
+  } catch (err) {
+    console.error("❌ Failed to start server:", err);
+  }
+};
+
+start();
