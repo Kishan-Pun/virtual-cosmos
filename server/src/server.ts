@@ -56,7 +56,7 @@ export const createServer = () => {
 
       // 🔥 broadcast new user
       socket.broadcast.emit("user-joined", {
-        id: socket.id,
+        id: userId,
         x: updatedUser?.x,
         y: updatedUser?.y,
         username: updatedUser?.username,
@@ -74,7 +74,7 @@ export const createServer = () => {
 
       const formatted = Object.fromEntries(
         users.map((u) => [
-          u.socketId,
+          u.userId,
           {
             x: u.x || 300,
             y: u.y || 300,
@@ -132,7 +132,7 @@ export const createServer = () => {
       );
 
       io.emit("user-moved", {
-        id: socket.id,
+        id: currentUserId,
         ...pos,
       });
     });
@@ -146,7 +146,7 @@ export const createServer = () => {
         );
       }
 
-      socket.broadcast.emit("user-left", socket.id);
+      socket.broadcast.emit("user-left", currentUserId);
 
       await emitUserCount();
     });
