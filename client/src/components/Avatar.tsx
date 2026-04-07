@@ -4,14 +4,13 @@ export const createAvatar = (
   id: string,
   isSelf: boolean,
   username?: string,
-) => {
+  avatar?: string,
+): PIXI.Container => {
   const container = new PIXI.Container();
 
-  // ✅ simple circle (NO image for now)
+  // ❌ REMOVE Assets.load (async)
   const circle = new PIXI.Graphics();
-  circle.beginFill(isSelf ? 0x00ffcc : 0xffcc00);
-  circle.drawCircle(0, 0, 20);
-  circle.endFill();
+  circle.circle(0, 0, 20).fill(isSelf ? 0x00ffcc : 0xffcc00);
 
   const label = new PIXI.Text({
     text: isSelf ? "You" : username || `User-${id.slice(0, 4)}`,
